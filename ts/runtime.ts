@@ -306,6 +306,14 @@ export class QuickJSRuntime implements Disposable {
     return this.memory.consumeHeapCharPointer(this.ffi.QTS_RuntimeDumpMemoryUsage(this.rt.value))
   }
 
+  setMaxStackSize(stackSize: number) {
+    if (stackSize < 0) {
+      throw new Error("Cannot set memory limit to negative number. To unset, pass 0")
+    }
+
+    this.ffi.QTS_RuntimeSetMaxStackSize(this.rt.value, stackSize)
+  }
+
   /**
    * Assert that `handle` is owned by this runtime.
    * @throws QuickJSWrongOwner if owned by a different runtime.
