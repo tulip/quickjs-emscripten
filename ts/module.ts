@@ -296,6 +296,10 @@ export class QuickJSWASMModule {
       runtime.setInterruptHandler(options.interruptHandler)
     }
 
+    if (options.maxStackSize) {
+      runtime.setMaxStackSize(options.maxStackSize)
+    }
+
     return runtime
   }
 
