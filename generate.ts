@@ -203,7 +203,20 @@ function renderFunction(args: {
     cwrap = `${ASSERT_SYNC_FN}(${cwrap})`
   }
 
-  return `  ${typescriptFunctionName}: ${typescriptFunctionType} =\n    ${cwrap}`
+  return `
+  ${typescriptFunctionName}: ${typescriptFunctionType} = (() => {
+    const f = ${cwrap};
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(\`unsafe to use due to prior call abort: \${String(maybeWhat.what)}\`);
+      }
+
+      return f(...args);
+    };
+  })();`
 }
 
 function getAvailableDefinitions(matches: RegExpMatchArray[]) {
@@ -285,7 +298,14 @@ import { ${importFromFfiTypes.join(", ")} } from "../types-ffi"
  * @unstable The FFI interface is considered private and may change.
  */
 export class ${ffiClassName} {
-  constructor(private module: ${moduleTypeName}) {}
+  private module: ${moduleTypeName};
+  private getAbortWhat: () => (null | { what: string });
+
+  constructor(module: ${moduleTypeName}, getAbortWhat: () => (null | { what: string })) {
+    this.module = module;
+    this.getAbortWhat = getAbortWhat;
+  }
+
   /** Set at compile time. */
   readonly DEBUG = ${DEBUG}
 

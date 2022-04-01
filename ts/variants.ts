@@ -55,6 +55,20 @@ export interface AsyncBuildVariant {
   importModuleLoader: () => Promise<EmscriptenModuleLoader<QuickJSAsyncEmscriptenModule>>
 }
 
+function aborter<T>(wasmModule: T) {
+  let abortWhat: null | { what: string } = null;
+
+  (wasmModule as any).module.onAbort((what: unknown) => {
+    if (abortWhat) {
+      throw new Error(`already aborted: ${abortWhat.what}`);
+    }
+
+    abortWhat = { what: String(what) };
+  });
+
+  return () => abortWhat;
+}
+
 /**
  * Create a new, completely isolated WebAssembly module containing the QuickJS library.
  * See the documentation on [[QuickJSWASMModule]].
@@ -76,7 +90,7 @@ export async function newQuickJSWASMModule(
   ])
   const wasmModule = await wasmModuleLoader()
   wasmModule.type = "sync"
-  const ffi = new QuickJSFFI(wasmModule)
+  const ffi = new QuickJSFFI(wasmModule, aborter(wasmModule));
   return new QuickJSWASMModule(wasmModule, ffi)
 }
 
@@ -106,7 +120,7 @@ export async function newQuickJSAsyncWASMModule(
   ])
   const wasmModule = await wasmModuleLoader()
   wasmModule.type = "async"
-  const ffi = new QuickJSAsyncFFI(wasmModule)
+  const ffi = new QuickJSAsyncFFI(wasmModule, aborter(wasmModule))
   return new QuickJSAsyncWASMModule(wasmModule, ffi)
 }
 

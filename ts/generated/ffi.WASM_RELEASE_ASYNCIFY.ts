@@ -10,172 +10,839 @@ import { JSRuntimePointer, JSContextPointer, JSContextPointerPointer, JSModuleDe
  * @unstable The FFI interface is considered private and may change.
  */
 export class QuickJSAsyncFFI {
-  constructor(private module: QuickJSAsyncEmscriptenModule) {}
+  private module: QuickJSAsyncEmscriptenModule;
+  private getAbortWhat: () => (null | { what: string });
+
+  constructor(module: QuickJSAsyncEmscriptenModule, getAbortWhat: () => (null | { what: string })) {
+    this.module = module;
+    this.getAbortWhat = getAbortWhat;
+  }
+
   /** Set at compile time. */
   readonly DEBUG = false
 
-  QTS_Throw: (ctx: JSContextPointer, error: JSValuePointer | JSValueConstPointer) => JSValuePointer =
-    this.module.cwrap("QTS_Throw", "number", ["number","number"])
 
-  QTS_NewError: (ctx: JSContextPointer) => JSValuePointer =
-    this.module.cwrap("QTS_NewError", "number", ["number"])
+  QTS_Throw: (ctx: JSContextPointer, error: JSValuePointer | JSValueConstPointer) => JSValuePointer = (() => {
+    const f = this.module.cwrap("QTS_Throw", "number", ["number","number"]);
 
-  QTS_RuntimeSetMemoryLimit: (rt: JSRuntimePointer, limit: number) => void =
-    this.module.cwrap("QTS_RuntimeSetMemoryLimit", null, ["number","number"])
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
 
-  QTS_RuntimeComputeMemoryUsage: (rt: JSRuntimePointer, ctx: JSContextPointer) => JSValuePointer =
-    this.module.cwrap("QTS_RuntimeComputeMemoryUsage", "number", ["number","number"])
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
 
-  QTS_RuntimeDumpMemoryUsage: (rt: JSRuntimePointer) => OwnedHeapCharPointer =
-    this.module.cwrap("QTS_RuntimeDumpMemoryUsage", "number", ["number"])
+      return f(...args);
+    };
+  })();
 
-  QTS_RecoverableLeakCheck: () => number =
-    this.module.cwrap("QTS_RecoverableLeakCheck", "number", [])
 
-  QTS_BuildIsSanitizeLeak: () => number =
-    this.module.cwrap("QTS_BuildIsSanitizeLeak", "number", [])
+  QTS_NewError: (ctx: JSContextPointer) => JSValuePointer = (() => {
+    const f = this.module.cwrap("QTS_NewError", "number", ["number"]);
 
-  QTS_RuntimeSetMaxStackSize: (rt: JSRuntimePointer, stack_size: number) => void =
-    this.module.cwrap("QTS_RuntimeSetMaxStackSize", null, ["number","number"])
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
 
-  QTS_GetUndefined: () => JSValueConstPointer =
-    this.module.cwrap("QTS_GetUndefined", "number", [])
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
 
-  QTS_GetNull: () => JSValueConstPointer =
-    this.module.cwrap("QTS_GetNull", "number", [])
+      return f(...args);
+    };
+  })();
 
-  QTS_GetFalse: () => JSValueConstPointer =
-    this.module.cwrap("QTS_GetFalse", "number", [])
 
-  QTS_GetTrue: () => JSValueConstPointer =
-    this.module.cwrap("QTS_GetTrue", "number", [])
+  QTS_RuntimeSetMemoryLimit: (rt: JSRuntimePointer, limit: number) => void = (() => {
+    const f = this.module.cwrap("QTS_RuntimeSetMemoryLimit", null, ["number","number"]);
 
-  QTS_NewRuntime: () => JSRuntimePointer =
-    this.module.cwrap("QTS_NewRuntime", "number", [])
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
 
-  QTS_FreeRuntime: (rt: JSRuntimePointer) => void =
-    this.module.cwrap("QTS_FreeRuntime", null, ["number"])
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
 
-  QTS_NewContext: (rt: JSRuntimePointer) => JSContextPointer =
-    this.module.cwrap("QTS_NewContext", "number", ["number"])
+      return f(...args);
+    };
+  })();
 
-  QTS_FreeContext: (ctx: JSContextPointer) => void =
-    this.module.cwrap("QTS_FreeContext", null, ["number"])
 
-  QTS_FreeValuePointer: (ctx: JSContextPointer, value: JSValuePointer) => void =
-    this.module.cwrap("QTS_FreeValuePointer", null, ["number","number"])
+  QTS_RuntimeComputeMemoryUsage: (rt: JSRuntimePointer, ctx: JSContextPointer) => JSValuePointer = (() => {
+    const f = this.module.cwrap("QTS_RuntimeComputeMemoryUsage", "number", ["number","number"]);
 
-  QTS_FreeValuePointerRuntime: (rt: JSRuntimePointer, value: JSValuePointer) => void =
-    this.module.cwrap("QTS_FreeValuePointerRuntime", null, ["number","number"])
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
 
-  QTS_FreeVoidPointer: (ctx: JSContextPointer, ptr: JSVoidPointer) => void =
-    this.module.cwrap("QTS_FreeVoidPointer", null, ["number","number"])
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
 
-  QTS_FreeCString: (ctx: JSContextPointer, str: JSBorrowedCharPointer) => void =
-    this.module.cwrap("QTS_FreeCString", null, ["number","number"])
+      return f(...args);
+    };
+  })();
 
-  QTS_DupValuePointer: (ctx: JSContextPointer, val: JSValuePointer | JSValueConstPointer) => JSValuePointer =
-    this.module.cwrap("QTS_DupValuePointer", "number", ["number","number"])
 
-  QTS_NewObject: (ctx: JSContextPointer) => JSValuePointer =
-    this.module.cwrap("QTS_NewObject", "number", ["number"])
+  QTS_RuntimeDumpMemoryUsage: (rt: JSRuntimePointer) => OwnedHeapCharPointer = (() => {
+    const f = this.module.cwrap("QTS_RuntimeDumpMemoryUsage", "number", ["number"]);
 
-  QTS_NewObjectProto: (ctx: JSContextPointer, proto: JSValuePointer | JSValueConstPointer) => JSValuePointer =
-    this.module.cwrap("QTS_NewObjectProto", "number", ["number","number"])
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
 
-  QTS_NewArray: (ctx: JSContextPointer) => JSValuePointer =
-    this.module.cwrap("QTS_NewArray", "number", ["number"])
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
 
-  QTS_NewFloat64: (ctx: JSContextPointer, num: number) => JSValuePointer =
-    this.module.cwrap("QTS_NewFloat64", "number", ["number","number"])
+      return f(...args);
+    };
+  })();
 
-  QTS_GetFloat64: (ctx: JSContextPointer, value: JSValuePointer | JSValueConstPointer) => number =
-    this.module.cwrap("QTS_GetFloat64", "number", ["number","number"])
 
-  QTS_NewString: (ctx: JSContextPointer, string: BorrowedHeapCharPointer) => JSValuePointer =
-    this.module.cwrap("QTS_NewString", "number", ["number","number"])
+  QTS_RecoverableLeakCheck: () => number = (() => {
+    const f = this.module.cwrap("QTS_RecoverableLeakCheck", "number", []);
 
-  QTS_GetString: (ctx: JSContextPointer, value: JSValuePointer | JSValueConstPointer) => JSBorrowedCharPointer =
-    this.module.cwrap("QTS_GetString", "number", ["number","number"])
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
 
-  QTS_IsJobPending: (rt: JSRuntimePointer) => number =
-    this.module.cwrap("QTS_IsJobPending", "number", ["number"])
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
 
-  QTS_ExecutePendingJob: (rt: JSRuntimePointer, maxJobsToExecute: number, lastJobContext: JSContextPointerPointer) => JSValuePointer =
-    assertSync(this.module.cwrap("QTS_ExecutePendingJob", "number", ["number","number","number"]))
+      return f(...args);
+    };
+  })();
 
-  QTS_ExecutePendingJob_MaybeAsync: (rt: JSRuntimePointer, maxJobsToExecute: number, lastJobContext: JSContextPointerPointer) => JSValuePointer | Promise<JSValuePointer> =
-    this.module.cwrap("QTS_ExecutePendingJob", "number", ["number","number","number"])
 
-  QTS_GetProp: (ctx: JSContextPointer, this_val: JSValuePointer | JSValueConstPointer, prop_name: JSValuePointer | JSValueConstPointer) => JSValuePointer =
-    assertSync(this.module.cwrap("QTS_GetProp", "number", ["number","number","number"]))
+  QTS_BuildIsSanitizeLeak: () => number = (() => {
+    const f = this.module.cwrap("QTS_BuildIsSanitizeLeak", "number", []);
 
-  QTS_GetProp_MaybeAsync: (ctx: JSContextPointer, this_val: JSValuePointer | JSValueConstPointer, prop_name: JSValuePointer | JSValueConstPointer) => JSValuePointer | Promise<JSValuePointer> =
-    this.module.cwrap("QTS_GetProp", "number", ["number","number","number"])
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
 
-  QTS_SetProp: (ctx: JSContextPointer, this_val: JSValuePointer | JSValueConstPointer, prop_name: JSValuePointer | JSValueConstPointer, prop_value: JSValuePointer | JSValueConstPointer) => void =
-    assertSync(this.module.cwrap("QTS_SetProp", null, ["number","number","number","number"]))
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
 
-  QTS_SetProp_MaybeAsync: (ctx: JSContextPointer, this_val: JSValuePointer | JSValueConstPointer, prop_name: JSValuePointer | JSValueConstPointer, prop_value: JSValuePointer | JSValueConstPointer) => void | Promise<void> =
-    this.module.cwrap("QTS_SetProp", null, ["number","number","number","number"])
+      return f(...args);
+    };
+  })();
 
-  QTS_DefineProp: (ctx: JSContextPointer, this_val: JSValuePointer | JSValueConstPointer, prop_name: JSValuePointer | JSValueConstPointer, prop_value: JSValuePointer | JSValueConstPointer, get: JSValuePointer | JSValueConstPointer, set: JSValuePointer | JSValueConstPointer, configurable: boolean, enumerable: boolean, has_value: boolean) => void =
-    this.module.cwrap("QTS_DefineProp", null, ["number","number","number","number","number","number","boolean","boolean","boolean"])
 
-  QTS_Call: (ctx: JSContextPointer, func_obj: JSValuePointer | JSValueConstPointer, this_obj: JSValuePointer | JSValueConstPointer, argc: number, argv_ptrs: JSValueConstPointerPointer) => JSValuePointer =
-    assertSync(this.module.cwrap("QTS_Call", "number", ["number","number","number","number","number"]))
+  QTS_RuntimeSetMaxStackSize: (rt: JSRuntimePointer, stack_size: number) => void = (() => {
+    const f = this.module.cwrap("QTS_RuntimeSetMaxStackSize", null, ["number","number"]);
 
-  QTS_Call_MaybeAsync: (ctx: JSContextPointer, func_obj: JSValuePointer | JSValueConstPointer, this_obj: JSValuePointer | JSValueConstPointer, argc: number, argv_ptrs: JSValueConstPointerPointer) => JSValuePointer | Promise<JSValuePointer> =
-    this.module.cwrap("QTS_Call", "number", ["number","number","number","number","number"])
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
 
-  QTS_ResolveException: (ctx: JSContextPointer, maybe_exception: JSValuePointer) => JSValuePointer =
-    this.module.cwrap("QTS_ResolveException", "number", ["number","number"])
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
 
-  QTS_Dump: (ctx: JSContextPointer, obj: JSValuePointer | JSValueConstPointer) => JSBorrowedCharPointer =
-    assertSync(this.module.cwrap("QTS_Dump", "number", ["number","number"]))
+      return f(...args);
+    };
+  })();
 
-  QTS_Dump_MaybeAsync: (ctx: JSContextPointer, obj: JSValuePointer | JSValueConstPointer) => JSBorrowedCharPointer | Promise<JSBorrowedCharPointer> =
-    this.module.cwrap("QTS_Dump", "number", ["number","number"])
 
-  QTS_Eval: (ctx: JSContextPointer, js_code: BorrowedHeapCharPointer, filename: string, detectModule: EvalDetectModule, evalFlags: EvalFlags) => JSValuePointer =
-    assertSync(this.module.cwrap("QTS_Eval", "number", ["number","number","string","number","number"]))
+  QTS_GetUndefined: () => JSValueConstPointer = (() => {
+    const f = this.module.cwrap("QTS_GetUndefined", "number", []);
 
-  QTS_Eval_MaybeAsync: (ctx: JSContextPointer, js_code: BorrowedHeapCharPointer, filename: string, detectModule: EvalDetectModule, evalFlags: EvalFlags) => JSValuePointer | Promise<JSValuePointer> =
-    this.module.cwrap("QTS_Eval", "number", ["number","number","string","number","number"])
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
 
-  QTS_Typeof: (ctx: JSContextPointer, value: JSValuePointer | JSValueConstPointer) => OwnedHeapCharPointer =
-    this.module.cwrap("QTS_Typeof", "number", ["number","number"])
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
 
-  QTS_GetGlobalObject: (ctx: JSContextPointer) => JSValuePointer =
-    this.module.cwrap("QTS_GetGlobalObject", "number", ["number"])
+      return f(...args);
+    };
+  })();
 
-  QTS_NewPromiseCapability: (ctx: JSContextPointer, resolve_funcs_out: JSValuePointerPointer) => JSValuePointer =
-    this.module.cwrap("QTS_NewPromiseCapability", "number", ["number","number"])
 
-  QTS_TestStringArg: (string: string) => void =
-    this.module.cwrap("QTS_TestStringArg", null, ["string"])
+  QTS_GetNull: () => JSValueConstPointer = (() => {
+    const f = this.module.cwrap("QTS_GetNull", "number", []);
 
-  QTS_BuildIsDebug: () => number =
-    this.module.cwrap("QTS_BuildIsDebug", "number", [])
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
 
-  QTS_BuildIsAsyncify: () => number =
-    this.module.cwrap("QTS_BuildIsAsyncify", "number", [])
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
 
-  QTS_NewFunction: (ctx: JSContextPointer, func_id: number, name: string) => JSValuePointer =
-    this.module.cwrap("QTS_NewFunction", "number", ["number","number","string"])
+      return f(...args);
+    };
+  })();
 
-  QTS_ArgvGetJSValueConstPointer: (argv: JSValuePointer | JSValueConstPointer, index: number) => JSValueConstPointer =
-    this.module.cwrap("QTS_ArgvGetJSValueConstPointer", "number", ["number","number"])
 
-  QTS_RuntimeEnableInterruptHandler: (rt: JSRuntimePointer) => void =
-    this.module.cwrap("QTS_RuntimeEnableInterruptHandler", null, ["number"])
+  QTS_GetFalse: () => JSValueConstPointer = (() => {
+    const f = this.module.cwrap("QTS_GetFalse", "number", []);
 
-  QTS_RuntimeDisableInterruptHandler: (rt: JSRuntimePointer) => void =
-    this.module.cwrap("QTS_RuntimeDisableInterruptHandler", null, ["number"])
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
 
-  QTS_RuntimeEnableModuleLoader: (rt: JSRuntimePointer, use_custom_normalize: number) => void =
-    this.module.cwrap("QTS_RuntimeEnableModuleLoader", null, ["number","number"])
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
 
-  QTS_RuntimeDisableModuleLoader: (rt: JSRuntimePointer) => void =
-    this.module.cwrap("QTS_RuntimeDisableModuleLoader", null, ["number"])
+      return f(...args);
+    };
+  })();
+
+
+  QTS_GetTrue: () => JSValueConstPointer = (() => {
+    const f = this.module.cwrap("QTS_GetTrue", "number", []);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_NewRuntime: () => JSRuntimePointer = (() => {
+    const f = this.module.cwrap("QTS_NewRuntime", "number", []);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_FreeRuntime: (rt: JSRuntimePointer) => void = (() => {
+    const f = this.module.cwrap("QTS_FreeRuntime", null, ["number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_NewContext: (rt: JSRuntimePointer) => JSContextPointer = (() => {
+    const f = this.module.cwrap("QTS_NewContext", "number", ["number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_FreeContext: (ctx: JSContextPointer) => void = (() => {
+    const f = this.module.cwrap("QTS_FreeContext", null, ["number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_FreeValuePointer: (ctx: JSContextPointer, value: JSValuePointer) => void = (() => {
+    const f = this.module.cwrap("QTS_FreeValuePointer", null, ["number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_FreeValuePointerRuntime: (rt: JSRuntimePointer, value: JSValuePointer) => void = (() => {
+    const f = this.module.cwrap("QTS_FreeValuePointerRuntime", null, ["number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_FreeVoidPointer: (ctx: JSContextPointer, ptr: JSVoidPointer) => void = (() => {
+    const f = this.module.cwrap("QTS_FreeVoidPointer", null, ["number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_FreeCString: (ctx: JSContextPointer, str: JSBorrowedCharPointer) => void = (() => {
+    const f = this.module.cwrap("QTS_FreeCString", null, ["number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_DupValuePointer: (ctx: JSContextPointer, val: JSValuePointer | JSValueConstPointer) => JSValuePointer = (() => {
+    const f = this.module.cwrap("QTS_DupValuePointer", "number", ["number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_NewObject: (ctx: JSContextPointer) => JSValuePointer = (() => {
+    const f = this.module.cwrap("QTS_NewObject", "number", ["number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_NewObjectProto: (ctx: JSContextPointer, proto: JSValuePointer | JSValueConstPointer) => JSValuePointer = (() => {
+    const f = this.module.cwrap("QTS_NewObjectProto", "number", ["number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_NewArray: (ctx: JSContextPointer) => JSValuePointer = (() => {
+    const f = this.module.cwrap("QTS_NewArray", "number", ["number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_NewFloat64: (ctx: JSContextPointer, num: number) => JSValuePointer = (() => {
+    const f = this.module.cwrap("QTS_NewFloat64", "number", ["number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_GetFloat64: (ctx: JSContextPointer, value: JSValuePointer | JSValueConstPointer) => number = (() => {
+    const f = this.module.cwrap("QTS_GetFloat64", "number", ["number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_NewString: (ctx: JSContextPointer, string: BorrowedHeapCharPointer) => JSValuePointer = (() => {
+    const f = this.module.cwrap("QTS_NewString", "number", ["number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_GetString: (ctx: JSContextPointer, value: JSValuePointer | JSValueConstPointer) => JSBorrowedCharPointer = (() => {
+    const f = this.module.cwrap("QTS_GetString", "number", ["number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_IsJobPending: (rt: JSRuntimePointer) => number = (() => {
+    const f = this.module.cwrap("QTS_IsJobPending", "number", ["number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_ExecutePendingJob: (rt: JSRuntimePointer, maxJobsToExecute: number, lastJobContext: JSContextPointerPointer) => JSValuePointer = (() => {
+    const f = assertSync(this.module.cwrap("QTS_ExecutePendingJob", "number", ["number","number","number"]));
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_ExecutePendingJob_MaybeAsync: (rt: JSRuntimePointer, maxJobsToExecute: number, lastJobContext: JSContextPointerPointer) => JSValuePointer | Promise<JSValuePointer> = (() => {
+    const f = this.module.cwrap("QTS_ExecutePendingJob", "number", ["number","number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_GetProp: (ctx: JSContextPointer, this_val: JSValuePointer | JSValueConstPointer, prop_name: JSValuePointer | JSValueConstPointer) => JSValuePointer = (() => {
+    const f = assertSync(this.module.cwrap("QTS_GetProp", "number", ["number","number","number"]));
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_GetProp_MaybeAsync: (ctx: JSContextPointer, this_val: JSValuePointer | JSValueConstPointer, prop_name: JSValuePointer | JSValueConstPointer) => JSValuePointer | Promise<JSValuePointer> = (() => {
+    const f = this.module.cwrap("QTS_GetProp", "number", ["number","number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_SetProp: (ctx: JSContextPointer, this_val: JSValuePointer | JSValueConstPointer, prop_name: JSValuePointer | JSValueConstPointer, prop_value: JSValuePointer | JSValueConstPointer) => void = (() => {
+    const f = assertSync(this.module.cwrap("QTS_SetProp", null, ["number","number","number","number"]));
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_SetProp_MaybeAsync: (ctx: JSContextPointer, this_val: JSValuePointer | JSValueConstPointer, prop_name: JSValuePointer | JSValueConstPointer, prop_value: JSValuePointer | JSValueConstPointer) => void | Promise<void> = (() => {
+    const f = this.module.cwrap("QTS_SetProp", null, ["number","number","number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_DefineProp: (ctx: JSContextPointer, this_val: JSValuePointer | JSValueConstPointer, prop_name: JSValuePointer | JSValueConstPointer, prop_value: JSValuePointer | JSValueConstPointer, get: JSValuePointer | JSValueConstPointer, set: JSValuePointer | JSValueConstPointer, configurable: boolean, enumerable: boolean, has_value: boolean) => void = (() => {
+    const f = this.module.cwrap("QTS_DefineProp", null, ["number","number","number","number","number","number","boolean","boolean","boolean"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_Call: (ctx: JSContextPointer, func_obj: JSValuePointer | JSValueConstPointer, this_obj: JSValuePointer | JSValueConstPointer, argc: number, argv_ptrs: JSValueConstPointerPointer) => JSValuePointer = (() => {
+    const f = assertSync(this.module.cwrap("QTS_Call", "number", ["number","number","number","number","number"]));
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_Call_MaybeAsync: (ctx: JSContextPointer, func_obj: JSValuePointer | JSValueConstPointer, this_obj: JSValuePointer | JSValueConstPointer, argc: number, argv_ptrs: JSValueConstPointerPointer) => JSValuePointer | Promise<JSValuePointer> = (() => {
+    const f = this.module.cwrap("QTS_Call", "number", ["number","number","number","number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_ResolveException: (ctx: JSContextPointer, maybe_exception: JSValuePointer) => JSValuePointer = (() => {
+    const f = this.module.cwrap("QTS_ResolveException", "number", ["number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_Dump: (ctx: JSContextPointer, obj: JSValuePointer | JSValueConstPointer) => JSBorrowedCharPointer = (() => {
+    const f = assertSync(this.module.cwrap("QTS_Dump", "number", ["number","number"]));
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_Dump_MaybeAsync: (ctx: JSContextPointer, obj: JSValuePointer | JSValueConstPointer) => JSBorrowedCharPointer | Promise<JSBorrowedCharPointer> = (() => {
+    const f = this.module.cwrap("QTS_Dump", "number", ["number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_Eval: (ctx: JSContextPointer, js_code: BorrowedHeapCharPointer, filename: string, detectModule: EvalDetectModule, evalFlags: EvalFlags) => JSValuePointer = (() => {
+    const f = assertSync(this.module.cwrap("QTS_Eval", "number", ["number","number","string","number","number"]));
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_Eval_MaybeAsync: (ctx: JSContextPointer, js_code: BorrowedHeapCharPointer, filename: string, detectModule: EvalDetectModule, evalFlags: EvalFlags) => JSValuePointer | Promise<JSValuePointer> = (() => {
+    const f = this.module.cwrap("QTS_Eval", "number", ["number","number","string","number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_Typeof: (ctx: JSContextPointer, value: JSValuePointer | JSValueConstPointer) => OwnedHeapCharPointer = (() => {
+    const f = this.module.cwrap("QTS_Typeof", "number", ["number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_GetGlobalObject: (ctx: JSContextPointer) => JSValuePointer = (() => {
+    const f = this.module.cwrap("QTS_GetGlobalObject", "number", ["number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_NewPromiseCapability: (ctx: JSContextPointer, resolve_funcs_out: JSValuePointerPointer) => JSValuePointer = (() => {
+    const f = this.module.cwrap("QTS_NewPromiseCapability", "number", ["number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_TestStringArg: (string: string) => void = (() => {
+    const f = this.module.cwrap("QTS_TestStringArg", null, ["string"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_BuildIsDebug: () => number = (() => {
+    const f = this.module.cwrap("QTS_BuildIsDebug", "number", []);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_BuildIsAsyncify: () => number = (() => {
+    const f = this.module.cwrap("QTS_BuildIsAsyncify", "number", []);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_NewFunction: (ctx: JSContextPointer, func_id: number, name: string) => JSValuePointer = (() => {
+    const f = this.module.cwrap("QTS_NewFunction", "number", ["number","number","string"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_ArgvGetJSValueConstPointer: (argv: JSValuePointer | JSValueConstPointer, index: number) => JSValueConstPointer = (() => {
+    const f = this.module.cwrap("QTS_ArgvGetJSValueConstPointer", "number", ["number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_RuntimeEnableInterruptHandler: (rt: JSRuntimePointer) => void = (() => {
+    const f = this.module.cwrap("QTS_RuntimeEnableInterruptHandler", null, ["number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_RuntimeDisableInterruptHandler: (rt: JSRuntimePointer) => void = (() => {
+    const f = this.module.cwrap("QTS_RuntimeDisableInterruptHandler", null, ["number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_RuntimeEnableModuleLoader: (rt: JSRuntimePointer, use_custom_normalize: number) => void = (() => {
+    const f = this.module.cwrap("QTS_RuntimeEnableModuleLoader", null, ["number","number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
+
+
+  QTS_RuntimeDisableModuleLoader: (rt: JSRuntimePointer) => void = (() => {
+    const f = this.module.cwrap("QTS_RuntimeDisableModuleLoader", null, ["number"]);
+
+    return (...args) => {
+      const maybeWhat = this.getAbortWhat();
+
+      if (maybeWhat) {
+        throw new Error(`unsafe to use due to prior call abort: ${String(maybeWhat.what)}`);
+      }
+
+      return f(...args);
+    };
+  })();
 }

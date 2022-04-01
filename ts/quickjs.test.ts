@@ -573,6 +573,43 @@ function contextTests(getContext: () => Promise<QuickJSContext>) {
     })
   })
 
+  // describe(".setMaxStackSize", () => {
+  //   it.only("sets an enforced limit", () => {
+  //     // TODO: Need to create a fresh instance for this test, since it corrupts
+  //     // the existing instance's memory, it seems.
+
+  //     vm.runtime.setMaxStackSize(1)
+
+  //     const result = vm.evalCode(
+  //       'let n = 0; function test() { if (++n < 10000) { test(); } }; test(); "ok"'
+  //     )
+
+  //     if (!result.error) {
+  //       result.value.dispose()
+  //       throw new Error("should be an error")
+  //     }
+
+  //     const error = vm.dump(result.error)
+  //     result.error.dispose()
+
+  //     console.log("$$$", error instanceof RangeError, error.message)
+  // TODO: Seems to be mangling the native error on the way through
+  //     expect(error).toBeInstanceOf(RangeError)
+  //     expect(error.message).toEqual("Maximum call stack size exceeded")
+  //   })
+
+  //   it("removes limit when set to 0", () => {
+  //     vm.runtime.setMaxStackSize(1)
+  //     vm.runtime.setMaxStackSize(0)
+  //     const result = vm.unwrapResult(
+  //       vm.evalCode('let n = 0; function test() { if (++n < 10) { test(); } }; test(); "ok"')
+  //     )
+  //     const value = vm.dump(result)
+  //     result.dispose()
+  //     assert.strictEqual(value, "ok")
+  //   })
+  // })
+
   describe("sharing objects between contexts", () => {
     it("can share objects between same runtime", () => {
       const otherContext = vm.runtime.newContext()

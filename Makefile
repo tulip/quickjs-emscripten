@@ -57,10 +57,27 @@ CFLAGS_WASM+=-s WASM=1
 CFLAGS_WASM+=-s EXPORTED_RUNTIME_METHODS=@exportedRuntimeMethods.json
 CFLAGS_WASM+=-s NODEJS_CATCH_EXIT=0
 CFLAGS_WASM+=-s MODULARIZE=1
+
+# TW Note: This overrides the default name of Module
 CFLAGS_WASM+=-s EXPORT_NAME=QuickJSRaw
+
 CFLAGS_WASM+=-s INVOKE_RUN=0
 CFLAGS_WASM+=-s ALLOW_MEMORY_GROWTH=1
 CFLAGS_WASM+=-s ALLOW_TABLE_GROWTH=1
+
+# TW HAX
+CFLAGS_WASM+=-s STACK_OVERFLOW_CHECK=2
+CFLAGS_WASM+=-s TOTAL_STACK=131072
+CFLAGS_WASM+=-s ASSERTIONS=2
+
+# TODO: Make this an input so modifications trigger a rebuild
+# CFLAGS_WASM+=-s INCOMING_MODULE_JS_API=onAbort
+CFLAGS_WASM+=--pre-js pre.js
+
+# TODO: SAFE_HEAP?
+
+# wasm-ld: error: initial memory too small, 4795696 bytes needed
+CFLAGS_WASM+=-s INITIAL_MEMORY=5242880
 
 # Empscripten options for asyncify variant
 # https://emscripten.org/docs/porting/asyncify.html
@@ -174,15 +191,15 @@ NATIVE: $(BUILD_WRAPPER)/test.$(VARIANT).exe
 
 $(BUILD_WRAPPER)/test.$(VARIANT).exe: $(BUILD_WRAPPER)/test.$(VARIANT).o $(BUILD_WRAPPER)/interface.$(VARIANT).o $(VARIANT_QUICKJS_OBJS)
 	$(MKDIRP)
-	$(CC) $(VARIANT_CFLAGS) -o $@ $< 
+	$(CC) $(VARIANT_CFLAGS) -o $@ $<
 
 $(BUILD_WRAPPER)/test.$(VARIANT).o: $(WRAPPER_ROOT)/test.c $(WRAPPER_ROOT)/interface.h
 	$(MKDIRP)
-	$(CC) $(VARIANT_CFLAGS) -o $@ $< 
+	$(CC) $(VARIANT_CFLAGS) -o $@ $<
 
 $(BUILD_WRAPPER)/%.NATIVE_$(RELEASE)_$(SYNC).o: $(WRAPPER_ROOT)/%.c
 	$(MKDIRP)
-	$(CC) $(VARIANT_CFLAGS) -o $@ $< 
+	$(CC) $(VARIANT_CFLAGS) -o $@ $<
 
 $(BUILD_QUICKJS)/%.NATIVE_$(RELEASE)_$(SYNC).o: $(QUICKJS_ROOT)/%.c
 	$(MKDIRP)
@@ -195,7 +212,7 @@ $(WRAPPER_ROOT)/interface.h: $(WRAPPER_ROOT)/interface.c generate.ts
 ###############################################################################
 # WASM variants
 WASM: $(BUILD_TS)/emscripten-module.$(VARIANT).js $(BUILD_TS)/emscripten-module.$(VARIANT).d.ts GENERATE
-GENERATE: $(BUILD_TS)/ffi.$(VARIANT).ts 
+GENERATE: $(BUILD_TS)/ffi.$(VARIANT).ts
 WASM_SYMBOLS=$(BUILD_WRAPPER)/symbols.json $(BUILD_WRAPPER)/asyncify-remove.json $(BUILD_WRAPPER)/asyncify-imports.json
 
 $(BUILD_TS)/emscripten-module.$(VARIANT).js: $(BUILD_WRAPPER)/interface.$(VARIANT).o $(VARIANT_QUICKJS_OBJS) $(WASM_SYMBOLS) | scripts/emcc.sh
