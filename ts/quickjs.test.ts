@@ -573,6 +573,33 @@ function contextTests(getContext: () => Promise<QuickJSContext>) {
     })
   })
 
+  describe(".setMaxStackSize", () => {
+    it("sets an enforced limit", () => {
+      vm.runtime.setMaxStackSize(1)
+      const result = vm.evalCode('"ok"')
+
+      if (!result.error) {
+        result.value.dispose()
+        throw new Error("should be an error")
+      }
+
+      vm.runtime.setMaxStackSize(0) // so we can dump
+      const error = vm.dump(result.error)
+      result.error.dispose()
+      assert.strictEqual(error.name, "SyntaxError")
+      assert.strictEqual(error.message, "stack overflow")
+    })
+
+    it("removes limit when set to 0", () => {
+      vm.runtime.setMaxStackSize(1)
+      vm.runtime.setMaxStackSize(0)
+      const result = vm.unwrapResult(vm.evalCode('"ok"'))
+      const value = vm.dump(result)
+      result.dispose()
+      assert.strictEqual(value, "ok")
+    })
+  })
+
   describe("sharing objects between contexts", () => {
     it("can share objects between same runtime", () => {
       const otherContext = vm.runtime.newContext()
