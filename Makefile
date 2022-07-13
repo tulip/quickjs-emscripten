@@ -1,10 +1,53 @@
+# ============================================================================ #
+#
+#
+#
+# ---------------------------------------------------------------------------- #
+
+.DEFAULT_GOAL = all
+
+NM_BINDIR = $$PWD/node_modules/.bin
+
 # Tools
-CC=clang
-EMSDK_VERSION=3.1.7
-EMSDK_DOCKER_IMAGE=emscripten/emsdk:$(EMSDK_VERSION)
-EMCC=EMSDK_VERSION=$(EMSDK_VERSION) EMSDK_DOCKER_IMAGE=$(EMSDK_DOCKER_IMAGE) scripts/emcc.sh
-GENERATE_TS=$(VARIANT_GENERATE_TS_ENV) npx ts-node generate.ts
-PRETTIER=npx prettier
+CC = clang
+TOUCH = touch
+RM = rm -f
+CAT = cat
+CP = cp --reflink=auto
+MKDIR_P = mkdir -p
+
+EMSDK_VERSION = 3.1.7
+EMSDK_DOCKER_IMAGE = emscripten/emsdk:$(EMSDK_VERSION)
+
+EMCC_ENV  = EMSDK_VERSION="$(EMSDK_VERSION)"
+EMCC_ENV += EMSDK_DOCKER_IMAGE="$(EMSDK_DOCKER_IMAGE)"
+EMCC = $(EMCC_ENV) scripts/emcc.sh
+
+GENERATE_TS = $(VARIANT_GENERATE_TS_ENV) $(TS_NODE) generate.ts
+GIT = git
+DOCKER = docker
+BASH = bash
+PRETTIER = PATH="$(NM_BINDIR):$$PATH" prettier
+MOCHA = PATH="$(NM_BINDIR):$$PATH" mocha
+TYPEDOC = PATH="$(NM_BINDIR):$$PATH" typedoc
+TS_NODE = PATH="$(NM_BINDIR):$$PATH" ts-node
+TSC = PATH="$(NM_BINDIR):$$PATH" tsc
+JQ = jq
+
+# Prefer Yarn, but fallback to NPM
+NODE_PKG_MGR := $(shell $(BASH) -c '_NPKGM=`command -v yarn`; if test -n "$$_NPKGM"; then echo "$${_NPKGM\#\#*/}"; else echo "npm"; fi;')
+
+NODE_PKG_INSTALL_FLAGS = install
+ifeq ($(NODE_PKG_MGR),npm)
+NODE_PKG_INSTALL_FLAGS += --save-dev --legacy-peer-deps
+endif
+
+$(info NODE_PKG_MGR = $(NODE_PKG_MGR))
+
+
+# ---------------------------------------------------------------------------- #
+
+PKG_VERSION := $(shell $(JQ) -r '.version' package.json)
 
 DEBUG_MAKE=1
 
@@ -29,6 +72,8 @@ RELEASE = $(word 2,$(subst _, ,$(VARIANT)))
 SYNC = $(word 3,$(subst _, ,$(VARIANT)))
 
 
+# ---------------------------------------------------------------------------- #
+
 # This macro handles finding all the related config for a varying variable.
 variantCombinations = $(PLATFORM) $(RELEASE) $(SYNC) $(PLATFORM)_$(RELEASE) $(PLATFORM)_$(SYNC) $(RELEASE)_$(SYNC) $(VARIANT)
 varsForVariant = $(addprefix $(1)_,$(variantCombinations))
@@ -51,6 +96,9 @@ VARIANT_QUICKJS_OBJS=$(patsubst %.o, $(BUILD_QUICKJS)/%.$(VARIANT).o, $(QUICKJS_
 # quickjs-emscripten
 EMCC_EXPORTED_FUNCS+=-s EXPORTED_FUNCTIONS=@$(BUILD_WRAPPER)/symbols.json
 EMCC_EXPORTED_FUNCS_ASYNCIFY+=-s EXPORTED_FUNCTIONS=@$(BUILD_WRAPPER)/symbols.asyncify.json
+
+
+# ---------------------------------------------------------------------------- #
 
 # Emscripten options
 CFLAGS_WASM+=-s WASM=1
@@ -93,14 +141,17 @@ CFLAGS_WASM_DEBUG_ASYNCIFY+=-s ASYNCIFY_ADVISE=1
 # Need to use -O3 - otherwise ASYNCIFY leads to stack overflows (why?)
 CFLAGS_WASM_DEBUG_ASYNCIFY+=-O3
 
+
+# ---------------------------------------------------------------------------- #
+
 # Variant vars
 VARIANT_GENERATE_TS_ENV=$(call forVariant,GENERATE_TS_ENV)
 VARIANT_CFLAGS=$(call forVariant,CFLAGS)
 
 ifdef DEBUG_MAKE
-	MKDIRP=@echo "\n=====[["" target: $@, deps: $<, variant: $(VARIANT) ""]]=====" ; mkdir -p $(dir $@)
+	MKDIRP=@echo "\n=====[["" target: $@, deps: $<, variant: $(VARIANT) ""]]=====" ; $(MKDIR_P) $(dir $@)
 else
-	MKDIRP=@mkdir -p $(dir $@)
+	MKDIRP=@$(MKDIR_P) $(dir $@)
 endif
 
 
@@ -110,43 +161,55 @@ endif
 ###############################################################################
 # High level targets
 
+ifeq ($(NODE_PKG_MGR),yarn)
+node_modules: package.json
+node_modules: yarn.lock
+else
+node_modules: package-lock.json
+package-lock.json: package.json
+	$(NODE_PKG_MGR) $(NODE_PKG_INSTALL_FLAGS) --package-lock-only
+endif
+node_modules:
+	$(NODE_PKG_MGR) $(NODE_PKG_INSTALL_FLAGS)
+
 wasm: $(WASM_VARIANTS)
 all: $(VARIANTS)
-dist: wasm tsconfig.json
-	rm -rf dist
-	yarn run tsc
-	cp -v ts/generated/*.wasm ts/generated/*.wasm.map dist/generated
+dist: wasm tsconfig.json node_modules
+	$(RM) -r dist
+	$(TSC)
+	$(CP) -v ts/generated/*.wasm ts/generated/*.wasm.map dist/generated
 
 .PHONY: test prettier
-test:
-	yarn test
-prettier:
-	yarn prettier
+test: node_modules
+	TS_NODE_TYPE_CHECK=false $(MOCHA)
+
+prettier: node_modules
+	$(PRETTIER)
 
 doc: prettier ts/* ts/generated/*.ts
-	yarn doc
-	touch doc
+	$(TYPEDOC)
+	$(TOUCH) doc
 
 build/quickjs-emscripten.tgz: dist
-	yarn pack --filename build/quickjs-emscripten.tgz
+	$(NODE_PKG_MGR) pack --filename build/quickjs-emscripten.tgz
 
 emcc: scripts/emcc.sh
-	docker pull $(EMSDK_DOCKER_IMAGE)
+	$(DOCKER) pull $(EMSDK_DOCKER_IMAGE)
 
 scripts/emcc.sh:
-	docker pull $(EMSDK_DOCKER_IMAGE)
-	touch scripts/emcc.sh
+	$(DOCKER) pull $(EMSDK_DOCKER_IMAGE)
+	$(TOUCH) scripts/emcc.sh
 
-examples/imports: downloadEcmaScriptModules.ts
-	npx ts-node downloadEcmaScriptModules.ts "https://esm.sh/react@17" "https://esm.sh/react-dom@17/server"
-	touch examples/imports
+examples/imports: downloadEcmaScriptModules.ts node_modules
+	$(TS_NODE) downloadEcmaScriptModules.ts "https://esm.sh/react@17" "https://esm.sh/react-dom@17/server"
+	$(TOUCH) examples/imports
 
 clean-generate:
-	rm -rfv $(BUILD_TS)
+	$(RM) -rv $(BUILD_TS)
 
 clean: clean-generate
-	rm -rfv $(BUILD_ROOT)
-	rm -rf  $(WRAPPER_ROOT)/interface.h
+	$(RM) -rv $(BUILD_ROOT)
+	$(RM) -r  $(WRAPPER_ROOT)/interface.h
 
 GENERATE_VARIANTS=$(addprefix generate.,$(WASM_VARIANTS))
 generate: $(GENERATE_VARIANTS)
@@ -194,7 +257,7 @@ $(WRAPPER_ROOT)/interface.h: $(WRAPPER_ROOT)/interface.c generate.ts
 
 ###############################################################################
 # WASM variants
-WASM: $(BUILD_TS)/emscripten-module.$(VARIANT).js $(BUILD_TS)/emscripten-module.$(VARIANT).d.ts GENERATE
+WASM: $(BUILD_TS)/emscripten-module.$(VARIANT).js $(BUILD_TS)/emscripten-module.$(VARIANT).d.ts GENERATE node_modules
 GENERATE: $(BUILD_TS)/ffi.$(VARIANT).ts 
 WASM_SYMBOLS=$(BUILD_WRAPPER)/symbols.json $(BUILD_WRAPPER)/asyncify-remove.json $(BUILD_WRAPPER)/asyncify-imports.json
 
@@ -204,7 +267,7 @@ $(BUILD_TS)/emscripten-module.$(VARIANT).js: $(BUILD_WRAPPER)/interface.$(VARIAN
 
 $(BUILD_TS)/emscripten-module.$(VARIANT).d.ts: ts/types-generated/emscripten-module.$(SYNC).d.ts
 	echo '// Generated from $<' > $@
-	cat $< >> $@
+	$(CAT) $< >> $@
 
 $(BUILD_WRAPPER)/%.WASM_$(RELEASE)_$(SYNC).o: $(WRAPPER_ROOT)/%.c $(WASM_SYMBOLS) | scripts/emcc.sh
 	$(MKDIRP)
@@ -218,14 +281,26 @@ $(BUILD_TS)/ffi.$(VARIANT).ts: $(WRAPPER_ROOT)/interface.c generate.ts ts/types-
 	$(MKDIRP)
 	$(GENERATE_TS) ffi $@
 
-$(BUILD_WRAPPER)/symbols.json:
+$(BUILD_WRAPPER)/symbols.json: node_modules
 	$(MKDIRP)
 	$(GENERATE_TS) symbols $@
 
-$(BUILD_WRAPPER)/asyncify-remove.json:
+$(BUILD_WRAPPER)/asyncify-remove.json: node_modules
 	$(MKDIRP)
 	$(GENERATE_TS) sync-symbols $@
 
-$(BUILD_WRAPPER)/asyncify-imports.json:
+$(BUILD_WRAPPER)/asyncify-imports.json: node_modules
 	$(MKDIRP)
 	$(GENERATE_TS) async-callback-symbols $@
+
+
+# ---------------------------------------------------------------------------- #
+
+include ./scripts.mk
+
+
+# ---------------------------------------------------------------------------- #
+#
+#
+#
+# ============================================================================ #
